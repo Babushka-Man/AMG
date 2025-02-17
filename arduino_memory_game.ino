@@ -35,6 +35,7 @@ class Game {
       Node* node = new Node();
       node->val = rand() % _numOfLeds;
       node->next = nullptr;
+      return node;
   }
 
   void increaseGameLength(){
@@ -44,6 +45,7 @@ class Game {
       _patternEnd = _patternStart;
     }
     else {
+      Serial.println("Got to else of increaseGameLength");
       _patternEnd->next = getNewNode();
       _patternEnd = _patternEnd->next;
     }
@@ -57,6 +59,23 @@ class Game {
       delay(200);
       _leds[node->val]->off();
       delay(200);
+      node = node->next;
+    }
+  }
+
+  void resetBlink(){
+    for(int j = 0; j < 2; j++)
+    {
+      for(int i = 0; i < _numOfLeds; i++)
+      {
+        _leds[i]->on();
+      }
+      delay(300);
+      for(int i = 0; i < _numOfLeds; i++)
+      {
+        _leds[i]->off();
+      }
+      delay(300);
     }
   }
 
@@ -65,6 +84,9 @@ public:
     _patternLength = 0;
     _numOfLeds = numOfLeds;
     _leds = leds;
+
+    _patternStart = nullptr;
+    _patternEnd = nullptr;
   }
 
   void start(){
@@ -82,23 +104,35 @@ public:
       _patternStart = temp;
     }
     _patternEnd = nullptr;
+
+    resetBlink();
   }
 
-  void setConstantPatternLength(int length){
-    _patternLength = length;
+  void restart(){
+    reset();
+    start();
   }
 
   Node* getPattern(){
     return _patternStart;
   }
 
-  int getCurrPaternLength(){
-    return _patternLength;
+  void nextLevel(){
+    increaseGameLength();
+    showPattern();
   }
 };
 
 class Player{
   Game* _myGame;
+  Node* _firstLed;  
+  Node* _currLed;  
+
+  void restartGame(){
+    _myGame->restart();
+    _firstLed = _myGame->getPattern();
+    _currLed = _firstLed;
+  }
 
 public:
   Player(Game* game){
@@ -107,6 +141,25 @@ public:
 
   void startGame(){
       _myGame->start();
+      _firstLed = _myGame->getPattern();
+      _currLed = _firstLed;
+  }
+
+  void pressedButton(int buttonLedNum){
+    String msg = "ButtonLedNum: " + String(buttonLedNum) + ", curr val: " + String(_currLed->val);
+    Serial.println(msg);
+    if(buttonLedNum == _currLed->val) {
+      _currLed = _currLed->next;
+      if(_currLed == nullptr)
+      {
+        _currLed = _firstLed;
+        delay(500);
+        _myGame->nextLevel();
+      }
+    }
+    else {
+      restartGame();
+    }
   }
 };
 
@@ -140,13 +193,13 @@ void setup() {
 }
 
 void loop() {
-  
   while (true) {
     for(int i = 0; i < BUTTON_COUNT; i++)
     {
       if(digitalRead(buttonPins[i]) == HIGH)
       {
-        
+        thePlayer->pressedButton(i);
+        while(digitalRead(buttonPins[i]) == HIGH);
       }
     }    
   }
