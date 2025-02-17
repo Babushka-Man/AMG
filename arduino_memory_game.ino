@@ -45,7 +45,6 @@ class Game {
       _patternEnd = _patternStart;
     }
     else {
-      Serial.println("Got to else of increaseGameLength");
       _patternEnd->next = getNewNode();
       _patternEnd = _patternEnd->next;
     }
@@ -117,6 +116,10 @@ public:
     return _patternStart;
   }
 
+  int getPatternLength(){
+    return _patternLength;
+  }
+
   void nextLevel(){
     increaseGameLength();
     showPattern();
@@ -146,8 +149,6 @@ public:
   }
 
   void pressedButton(int buttonLedNum){
-    String msg = "ButtonLedNum: " + String(buttonLedNum) + ", curr val: " + String(_currLed->val);
-    Serial.println(msg);
     if(buttonLedNum == _currLed->val) {
       _currLed = _currLed->next;
       if(_currLed == nullptr)
@@ -158,7 +159,12 @@ public:
       }
     }
     else {
+      String scoreMsg = "********************  Your score is: " + String(_myGame->getPatternLength()) + "  ********************";
       restartGame();
+      for(int i = 0; i < 5; i++) Serial.println();
+      Serial.println("************************************************************");
+      Serial.println(scoreMsg);
+      Serial.println("************************************************************");
     }
   }
 };
