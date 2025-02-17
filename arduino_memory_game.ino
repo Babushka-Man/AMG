@@ -35,16 +35,23 @@ public:
 };
 
 int LED_COUNT = 4;
+int BUTTON_COUNT = LED_COUNT;
 int ledPins[] = {1, 2, 3, 4}; 
+int buttonPins[] = {9, 10, 12, 13};
 
 Game theGame = Game();
 int* pattern;
 
 void setup() {
-  pinMode(ledPins[0], OUTPUT);
-  pinMode(ledPins[1], OUTPUT);
-  pinMode(ledPins[2], OUTPUT);
-  pinMode(ledPins[3], OUTPUT);
+  Serial.begin(9600);
+  
+  for(int i = 0; i < LED_COUNT; i++){
+    pinMode(ledPins[i], OUTPUT);
+  }
+
+  for(int i = 0; i < LED_COUNT; i++){
+    pinMode(buttonPins[i], INPUT);
+  }
 
   theGame.setConstantPatternLength(4);
   pattern = theGame.getPattern();
@@ -58,7 +65,20 @@ void loop() {
     digitalWrite(ledPins[pattern[i]], LOW);
     delay(200);
   }
-  delay(1000);
+  
+  while (true) {
+    for(int i = 0; i < BUTTON_COUNT; i++)
+    {
+      if(digitalRead(buttonPins[i]) == HIGH)
+      {
+        String logMsg = "Button " + String(buttonPins[i]) + " was pressed";
+        Serial.println(logMsg);
+        delay(100);
+      }
+
+    }    
+  }
+
 }
 
 
