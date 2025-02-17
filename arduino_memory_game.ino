@@ -1,46 +1,121 @@
 // My memory game
 // Lets see how it goes... ;)
 
-class Game {
-  int patternLength = 0;
-  int* pattern = nullptr;
+class Node {
+public:
+  int val;
+  Node* next;
+};
+
+class Led {
+  int _pin;
 
 public:
+  Led(int pin){
+    _pin = pin;
+  }
+
+  void on(){
+    digitalWrite(_pin, HIGH);
+  }
+
+  void off(){
+    digitalWrite(_pin, LOW);
+  }
+};
+
+class Game {
+  int _patternLength = 0;
+  Node* _patternStart = nullptr;
+  Node* _patternEnd = nullptr;
+  int _numOfLeds;
+  Led** _leds;
+
+  Node* getNewNode() {
+      Node* node = new Node();
+      node->val = rand() % _numOfLeds;
+      node->next = nullptr;
+  }
+
+  void increaseGameLength(){
+    _patternLength++;
+    if (_patternStart == nullptr) {
+      _patternStart = getNewNode();
+      _patternEnd = _patternStart;
+    }
+    else {
+      _patternEnd->next = getNewNode();
+      _patternEnd = _patternEnd->next;
+    }
+  }
+
+  void showPattern(){
+    Node* node = _patternStart;
+    for(int i = 0; i < _patternLength; i++)
+    {
+      _leds[node->val]->on();
+      delay(200);
+      _leds[node->val]->off();
+      delay(200);
+    }
+  }
+
+public:
+  Game(int numOfLeds, Led** leds){
+    _patternLength = 0;
+    _numOfLeds = numOfLeds;
+    _leds = leds;
+  }
+
+  void start(){
+    increaseGameLength();
+    showPattern();
+  }
+
   void reset(){
-    patternLength = 0;
-    free(pattern);
-    pattern = nullptr;
+    _patternLength = 0;
+    
+    Node* temp;
+    while (_patternStart != nullptr) {
+      temp = _patternStart->next;
+      free(_patternStart);
+      _patternStart = temp;
+    }
+    _patternEnd = nullptr;
   }
 
   void setConstantPatternLength(int length){
-    patternLength = length;
+    _patternLength = length;
   }
 
-  int* getPattern(){
-    if(pattern != nullptr)
-    {
-      pattern = malloc(patternLength * sizeof(int));
-    }
-    for(int i = 0; i < patternLength; i++)
-    {
-      pattern[i] = rand() % 4;
-    }
-    return pattern;
+  Node* getPattern(){
+    return _patternStart;
   }
 
   int getCurrPaternLength(){
-    return patternLength;
+    return _patternLength;
+  }
+};
+
+class Player{
+  Game* _myGame;
+
+public:
+  Player(Game* game){
+    _myGame = game;
   }
 
+  void startGame(){
+      _myGame->start();
+  }
 };
 
 int LED_COUNT = 4;
 int BUTTON_COUNT = LED_COUNT;
-int ledPins[] = {1, 2, 3, 4}; 
+int ledPins[] = {2, 3, 4, 5}; 
 int buttonPins[] = {9, 10, 12, 13};
 
-Game theGame = Game();
-int* pattern;
+Player* thePlayer;
 
 void setup() {
   Serial.begin(9600);
@@ -53,29 +128,26 @@ void setup() {
     pinMode(buttonPins[i], INPUT);
   }
 
-  theGame.setConstantPatternLength(4);
-  pattern = theGame.getPattern();
+  Led** leds = malloc(LED_COUNT * sizeof(Led*));
+
+  for(int i = 0; i < LED_COUNT; i++){
+    leds[i] = new Led(ledPins[i]);
+  }
+
+  Game* theGame = new Game(LED_COUNT, leds);
+  thePlayer = new Player(theGame);
+  thePlayer->startGame();
 }
 
 void loop() {
-  for(int i = 0; i < theGame.getCurrPaternLength(); i++)
-  {
-    digitalWrite(ledPins[pattern[i]], HIGH);
-    delay(200);
-    digitalWrite(ledPins[pattern[i]], LOW);
-    delay(200);
-  }
   
   while (true) {
     for(int i = 0; i < BUTTON_COUNT; i++)
     {
       if(digitalRead(buttonPins[i]) == HIGH)
       {
-        String logMsg = "Button " + String(buttonPins[i]) + " was pressed";
-        Serial.println(logMsg);
-        delay(100);
+        
       }
-
     }    
   }
 
